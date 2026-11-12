@@ -1,0 +1,1460 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#0d6076">
+  <title>Carlos's Pinyin Quest</title>
+  <style>
+    :root {
+      --deep: #073b4c;
+      --ocean: #0d6076;
+      --ocean-2: #14849b;
+      --ice: #eefcff;
+      --mist: #d9f5f6;
+      --card: rgba(255, 255, 255, 0.96);
+      --ink: #12333d;
+      --muted: #55757e;
+      --coral: #ff7d69;
+      --coral-dark: #d94e3c;
+      --correct: #149a69;
+      --correct-bg: #e9fff6;
+      --wrong: #d94747;
+      --wrong-bg: #fff0f0;
+      --line: #c5e5e8;
+      --shadow: 0 24px 70px rgba(3, 45, 58, 0.2);
+      --radius: 30px;
+    }
+
+    * { box-sizing: border-box; }
+
+    html { min-height: 100%; }
+
+    body {
+      min-height: 100vh;
+      margin: 0;
+      color: var(--ink);
+      font-family: Inter, ui-rounded, "SF Pro Rounded", "Segoe UI", Arial, sans-serif;
+      background:
+        radial-gradient(circle at 12% 18%, rgba(255,255,255,.38) 0 8%, transparent 8.3%),
+        radial-gradient(circle at 91% 78%, rgba(255,255,255,.25) 0 11%, transparent 11.3%),
+        linear-gradient(150deg, #bceef0 0%, #76ced6 36%, #2b9aad 73%, #0d6076 100%);
+      overflow-x: hidden;
+    }
+
+    button { font: inherit; }
+
+    .sr-only {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border: 0;
+    }
+
+    .scene {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      overflow: hidden;
+      z-index: 0;
+    }
+
+    .bubble {
+      position: absolute;
+      width: 16px;
+      height: 16px;
+      border: 2px solid rgba(255,255,255,.36);
+      border-radius: 50%;
+      box-shadow: 25px 55px 0 -3px rgba(255,255,255,.22), 60px 15px 0 3px rgba(255,255,255,.18);
+    }
+
+    .bubble.one { left: 7%; top: 62%; }
+    .bubble.two { right: 10%; top: 17%; transform: scale(1.35); }
+
+    .bg-seal {
+      position: absolute;
+      width: clamp(180px, 23vw, 330px);
+      color: rgba(255,255,255,.19);
+      filter: drop-shadow(0 20px 30px rgba(4,67,82,.08));
+    }
+
+    .bg-seal.left { left: -70px; bottom: -10px; transform: rotate(7deg); }
+    .bg-seal.right { right: -80px; top: 7%; transform: rotate(-13deg) scale(.78); }
+
+    .ice-bank {
+      position: absolute;
+      left: -6%;
+      right: -6%;
+      bottom: -75px;
+      height: 180px;
+      border-radius: 50% 50% 0 0 / 50% 50% 0 0;
+      background: rgba(239,253,255,.68);
+      transform: rotate(-1.5deg);
+    }
+
+    .app-shell {
+      position: relative;
+      z-index: 1;
+      width: min(960px, calc(100% - 32px));
+      min-height: 100vh;
+      margin: 0 auto;
+      padding: 26px 0;
+      display: grid;
+      place-items: center;
+    }
+
+    .screen {
+      width: 100%;
+      animation: rise .42s ease both;
+    }
+
+    .screen[hidden] { display: none !important; }
+
+    @keyframes rise {
+      from { opacity: 0; transform: translateY(14px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .panel {
+      width: 100%;
+      border: 1px solid rgba(255,255,255,.72);
+      border-radius: var(--radius);
+      background: var(--card);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(16px);
+    }
+
+    .intro-panel {
+      display: grid;
+      grid-template-columns: minmax(0, 1.05fr) minmax(280px, .95fr);
+      align-items: center;
+      min-height: 610px;
+      padding: clamp(34px, 6vw, 68px);
+      overflow: hidden;
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      margin: 0 0 16px;
+      color: var(--ocean);
+      font-size: .78rem;
+      font-weight: 850;
+      letter-spacing: .16em;
+      text-transform: uppercase;
+    }
+
+    .eyebrow::before {
+      content: "";
+      width: 28px;
+      height: 3px;
+      border-radius: 999px;
+      background: var(--coral);
+    }
+
+    h1, h2, p { margin-top: 0; }
+
+    h1 {
+      margin-bottom: 18px;
+      color: var(--deep);
+      font-size: clamp(3rem, 7.6vw, 5.6rem);
+      line-height: .92;
+      letter-spacing: -.065em;
+    }
+
+    .intro-copy {
+      max-width: 540px;
+      margin-bottom: 28px;
+      color: var(--muted);
+      font-size: clamp(1rem, 2vw, 1.18rem);
+      line-height: 1.65;
+    }
+
+    .facts {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin: 0 0 30px;
+      padding: 0;
+      list-style: none;
+    }
+
+    .facts li {
+      padding: 9px 13px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      color: var(--ocean);
+      background: #f5feff;
+      font-size: .88rem;
+      font-weight: 750;
+    }
+
+    .primary-button,
+    .secondary-button {
+      min-height: 54px;
+      border-radius: 16px;
+      padding: 0 24px;
+      cursor: pointer;
+      font-weight: 850;
+      transition: transform .16s ease, box-shadow .16s ease, background .16s ease;
+    }
+
+    .primary-button {
+      border: 0;
+      color: white;
+      background: linear-gradient(135deg, var(--coral), #ff967d);
+      box-shadow: 0 12px 25px rgba(217, 78, 60, .25);
+    }
+
+    .primary-button:hover { transform: translateY(-2px); box-shadow: 0 15px 30px rgba(217, 78, 60, .3); }
+    .primary-button:active { transform: translateY(0); }
+
+    .secondary-button {
+      border: 2px solid var(--line);
+      color: var(--ocean);
+      background: white;
+    }
+
+    .secondary-button:hover { border-color: #82cdd3; background: #f2fdfe; }
+
+    button:focus-visible {
+      outline: 4px solid rgba(255, 125, 105, .34);
+      outline-offset: 3px;
+    }
+
+    .hero-art {
+      position: relative;
+      min-height: 430px;
+      display: grid;
+      place-items: center;
+    }
+
+    .hero-disc {
+      position: absolute;
+      width: min(370px, 92%);
+      aspect-ratio: 1;
+      border-radius: 50%;
+      background:
+        radial-gradient(circle at 40% 36%, rgba(255,255,255,.95) 0 4%, transparent 4.4%),
+        linear-gradient(145deg, #c9f3f4, #70cbd3);
+      box-shadow: inset 0 0 0 2px rgba(255,255,255,.68), 0 28px 55px rgba(16,103,120,.18);
+    }
+
+    .hero-seal {
+      position: relative;
+      z-index: 1;
+      width: min(390px, 100%);
+      color: #fbffff;
+      filter: drop-shadow(0 22px 20px rgba(5,66,80,.2));
+      transform: rotate(-3deg);
+    }
+
+    .fish {
+      position: absolute;
+      z-index: 2;
+      top: 18%;
+      right: 3%;
+      color: var(--coral);
+      font-size: 2.5rem;
+      transform: rotate(-8deg);
+      animation: bob 2.4s ease-in-out infinite;
+    }
+
+    @keyframes bob { 50% { transform: translateY(-8px) rotate(5deg); } }
+
+    .quiz-panel { padding: clamp(22px, 4.3vw, 42px); }
+
+    .quiz-topline {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 18px;
+      margin-bottom: 20px;
+    }
+
+    .mini-brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      color: var(--deep);
+      font-weight: 900;
+    }
+
+    .mini-seal { width: 44px; color: #dff6f6; }
+
+    .question-count {
+      color: var(--muted);
+      font-size: .92rem;
+      font-weight: 800;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .progress-track {
+      position: relative;
+      height: 12px;
+      margin: 0 18px 34px 0;
+      border-radius: 999px;
+      background: #dceff1;
+      box-shadow: inset 0 1px 2px rgba(7,59,76,.1);
+    }
+
+    .progress-fill {
+      width: 0;
+      height: 100%;
+      border-radius: inherit;
+      background: linear-gradient(90deg, var(--ocean-2), #43b8b3);
+      transition: width .35s ease;
+    }
+
+    .progress-seal {
+      position: absolute;
+      top: 50%;
+      left: 0;
+      width: 48px;
+      color: #f8ffff;
+      filter: drop-shadow(0 3px 3px rgba(7,59,76,.25));
+      transform: translate(-20%, -52%) rotate(-4deg);
+      transition: left .35s ease;
+    }
+
+    .prompt-card {
+      position: relative;
+      min-height: 220px;
+      margin-bottom: 22px;
+      padding: 32px 24px;
+      display: grid;
+      place-items: center;
+      text-align: center;
+      border: 2px solid #d7ecee;
+      border-radius: 24px;
+      background:
+        radial-gradient(circle at 8% 10%, rgba(255,125,105,.08) 0 12%, transparent 12.4%),
+        linear-gradient(145deg, #ffffff, #f4fdfe);
+    }
+
+    .prompt-label {
+      margin: 0 0 14px;
+      color: var(--muted);
+      font-size: .82rem;
+      font-weight: 850;
+      letter-spacing: .14em;
+      text-transform: uppercase;
+    }
+
+    .pinyin {
+      margin: 0;
+      color: var(--deep);
+      font-size: clamp(2.9rem, 8vw, 5.4rem);
+      font-weight: 900;
+      line-height: 1;
+      letter-spacing: -.035em;
+      overflow-wrap: anywhere;
+    }
+
+    .answers {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 14px;
+    }
+
+    .answer {
+      position: relative;
+      min-height: 84px;
+      padding: 16px 52px 16px 20px;
+      border: 2px solid var(--line);
+      border-radius: 18px;
+      color: var(--ink);
+      background: #fff;
+      text-align: left;
+      cursor: pointer;
+      font-size: clamp(.98rem, 2vw, 1.1rem);
+      font-weight: 760;
+      line-height: 1.35;
+      transition: border-color .16s ease, background .16s ease, transform .16s ease, box-shadow .16s ease;
+    }
+
+    .answer:hover:not(:disabled) {
+      transform: translateY(-2px);
+      border-color: #69bcc5;
+      box-shadow: 0 9px 18px rgba(8,92,110,.09);
+    }
+
+    .answer:disabled { cursor: default; opacity: 1; }
+
+    .answer-key {
+      position: absolute;
+      top: 50%;
+      right: 17px;
+      width: 28px;
+      height: 28px;
+      display: grid;
+      place-items: center;
+      border: 1px solid var(--line);
+      border-radius: 9px;
+      color: var(--muted);
+      background: #f6fcfd;
+      font-size: .8rem;
+      font-weight: 850;
+      transform: translateY(-50%);
+    }
+
+    .answer.correct {
+      border-color: var(--correct);
+      background: var(--correct-bg);
+      box-shadow: 0 0 0 2px rgba(20,154,105,.12);
+    }
+
+    .answer.wrong {
+      border-color: var(--wrong);
+      background: var(--wrong-bg);
+      box-shadow: 0 0 0 2px rgba(217,71,71,.1);
+    }
+
+    .answer.correct .answer-key {
+      border-color: var(--correct);
+      color: white;
+      background: var(--correct);
+    }
+
+    .answer.wrong .answer-key {
+      border-color: var(--wrong);
+      color: white;
+      background: var(--wrong);
+    }
+
+    .feedback-row {
+      min-height: 74px;
+      margin-top: 18px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 18px;
+    }
+
+    .feedback {
+      margin: 0;
+      color: var(--muted);
+      font-weight: 800;
+    }
+
+    .feedback.good { color: var(--correct); }
+    .feedback.bad { color: var(--wrong); }
+
+    .next-button { min-width: 150px; }
+
+    .cloze-panel {
+      padding: clamp(26px, 5vw, 50px);
+    }
+
+    .cloze-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 20px;
+      margin-bottom: 24px;
+    }
+
+    .cloze-header h2 {
+      margin: 4px 0 8px;
+      color: var(--deep);
+      font-size: clamp(2rem, 5vw, 3.5rem);
+      line-height: 1;
+      letter-spacing: -.045em;
+    }
+
+    .cloze-instructions {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.55;
+    }
+
+    .cloze-count {
+      flex: 0 0 auto;
+      padding: 9px 13px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      color: var(--ocean);
+      background: #f5feff;
+      font-size: .85rem;
+      font-weight: 850;
+    }
+
+    .word-bank-label {
+      margin: 0 0 9px;
+      color: var(--muted);
+      font-size: .75rem;
+      font-weight: 850;
+      letter-spacing: .13em;
+      text-transform: uppercase;
+    }
+
+    .word-bank {
+      margin: 0 0 24px;
+      min-height: 96px;
+      padding: 18px;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: center;
+      gap: 9px;
+      border: 2px dashed #9fd5da;
+      border-radius: 17px;
+      background: #f5fcfd;
+    }
+
+    .word-bank.drag-over {
+      border-color: var(--ocean-2);
+      background: #eafafb;
+    }
+
+    .word-chip {
+      min-height: 40px;
+      padding: 7px 13px;
+      border: 2px solid #acd9dd;
+      border-radius: 999px;
+      color: var(--ocean);
+      background: white;
+      box-shadow: 0 2px 8px rgba(7,59,76,.07);
+      font-size: .9rem;
+      font-weight: 800;
+      cursor: grab;
+      user-select: none;
+      transition: transform .15s ease, border-color .15s ease, box-shadow .15s ease;
+    }
+
+    .word-bank .word-chip:nth-child(3n+1) { transform: rotate(-3deg) translateY(3px); }
+    .word-bank .word-chip:nth-child(3n+2) { transform: rotate(2deg) translateY(-4px); }
+    .word-bank .word-chip:nth-child(3n) { transform: rotate(-1deg) translateY(1px); }
+
+    .word-chip:hover:not(:disabled) { border-color: var(--ocean-2); box-shadow: 0 7px 15px rgba(7,59,76,.12); }
+    .word-chip.selected { border-color: var(--coral); box-shadow: 0 0 0 3px rgba(255,125,105,.2); }
+    .word-chip.dragging { opacity: .55; cursor: grabbing; }
+    .word-chip:disabled { cursor: default; opacity: 1; }
+
+    .cloze-passage {
+      margin: 0;
+      padding: clamp(22px, 4vw, 38px);
+      border: 2px solid #d7ecee;
+      border-radius: 24px;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at 92% 12%, rgba(255,125,105,.08) 0 10%, transparent 10.4%),
+        linear-gradient(145deg, #ffffff, #f4fdfe);
+      font-size: clamp(1.15rem, 2.6vw, 1.42rem);
+      font-weight: 650;
+      line-height: 2.5;
+    }
+
+    .cloze-blank {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      margin: 0 3px;
+      vertical-align: middle;
+    }
+
+    .cloze-slot {
+      max-width: 210px;
+      min-width: 132px;
+      min-height: 44px;
+      padding: 4px 7px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border: 2px dashed #77bcc4;
+      border-radius: 11px;
+      color: var(--deep);
+      background: rgba(255,255,255,.84);
+      cursor: pointer;
+      vertical-align: middle;
+      transition: border-color .15s ease, background .15s ease;
+    }
+
+    .cloze-slot::before {
+      content: "_____";
+      color: #77aab1;
+      letter-spacing: .12em;
+      font-weight: 750;
+    }
+
+    .cloze-slot:has(.word-chip)::before { display: none; }
+    .cloze-slot.drag-over { border-color: var(--coral); background: #fff8f5; }
+    .cloze-slot .word-chip { min-height: 32px; padding: 3px 10px; transform: none; box-shadow: none; }
+
+    .cloze-slot.correct {
+      border-color: var(--correct);
+      color: var(--correct);
+      background: var(--correct-bg);
+    }
+
+    .cloze-slot.wrong {
+      border-color: var(--wrong);
+      color: var(--wrong);
+      background: var(--wrong-bg);
+    }
+
+    .cloze-correction {
+      color: var(--correct);
+      font-size: .78rem;
+      font-weight: 900;
+      white-space: nowrap;
+    }
+
+    .cloze-correction[hidden] { display: none; }
+
+    .result-panel {
+      padding: clamp(34px, 6vw, 64px);
+      text-align: center;
+    }
+
+    .result-mascot {
+      width: 116px;
+      margin: -8px auto 8px;
+      color: #dff7f8;
+      filter: drop-shadow(0 12px 12px rgba(6,75,90,.17));
+    }
+
+    .result-panel h2 {
+      margin-bottom: 10px;
+      color: var(--deep);
+      font-size: clamp(2.2rem, 6vw, 4.2rem);
+      letter-spacing: -.045em;
+    }
+
+    .result-message {
+      max-width: 540px;
+      margin: 0 auto 28px;
+      color: var(--muted);
+      font-size: 1.05rem;
+      line-height: 1.55;
+    }
+
+    .score-ring {
+      width: 196px;
+      height: 196px;
+      margin: 0 auto 28px;
+      display: grid;
+      place-items: center;
+      border-radius: 50%;
+      background: conic-gradient(var(--coral) var(--score-angle, 0deg), #dceff1 0);
+      box-shadow: 0 18px 40px rgba(10,93,111,.16);
+    }
+
+    .score-ring::before {
+      content: "";
+      position: absolute;
+      width: 158px;
+      height: 158px;
+      border-radius: 50%;
+      background: white;
+    }
+
+    .score-content { position: relative; z-index: 1; }
+
+    .score-number {
+      display: block;
+      color: var(--deep);
+      font-size: 4.3rem;
+      font-weight: 950;
+      line-height: .88;
+      letter-spacing: -.06em;
+    }
+
+    .score-out-of {
+      display: block;
+      margin-top: 7px;
+      color: var(--muted);
+      font-size: .85rem;
+      font-weight: 850;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+    }
+
+    .result-stats {
+      width: min(520px, 100%);
+      margin: 0 auto 28px;
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+    }
+
+    .stat {
+      padding: 18px 12px;
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      background: #f7fdfe;
+    }
+
+    .stat strong {
+      display: block;
+      color: var(--deep);
+      font-size: 1.7rem;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .stat span { color: var(--muted); font-size: .82rem; font-weight: 800; }
+
+    .result-actions {
+      display: flex;
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    .review {
+      width: min(680px, 100%);
+      margin: 30px auto 0;
+      padding-top: 26px;
+      border-top: 1px solid var(--line);
+      text-align: left;
+    }
+
+    .review[hidden] { display: none; }
+
+    .review h3 {
+      margin: 0 0 14px;
+      color: var(--deep);
+      font-size: 1.15rem;
+    }
+
+    .review-list {
+      max-height: 310px;
+      margin: 0;
+      padding: 0;
+      display: grid;
+      gap: 9px;
+      overflow: auto;
+      list-style: none;
+    }
+
+    .review-item {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 20px;
+      padding: 13px 15px;
+      border-radius: 13px;
+      background: #f4fbfc;
+    }
+
+    .review-item strong { color: var(--ocean); font-size: 1.05rem; }
+    .review-item span { color: var(--muted); text-align: right; }
+
+    .footer-note {
+      margin: 16px 0 0;
+      color: rgba(255,255,255,.86);
+      text-align: center;
+      font-size: .76rem;
+      font-weight: 700;
+      letter-spacing: .04em;
+    }
+
+    @media (max-width: 760px) {
+      .app-shell { width: min(100% - 20px, 720px); padding: 10px 0 18px; }
+      .intro-panel { grid-template-columns: 1fr; min-height: 0; padding: 34px 26px 26px; }
+      .hero-art { min-height: 265px; margin-top: 18px; }
+      .hero-disc { width: 245px; }
+      .hero-seal { width: 270px; }
+      .fish { right: 8%; }
+      .quiz-panel { padding: 22px 16px 16px; }
+      .answers { grid-template-columns: 1fr; gap: 10px; }
+      .answer { min-height: 68px; }
+      .prompt-card { min-height: 180px; margin-bottom: 16px; }
+      .feedback-row { align-items: stretch; flex-direction: column; gap: 10px; }
+      .feedback { min-height: 22px; }
+      .next-button { width: 100%; }
+      .cloze-panel { padding: 24px 16px 16px; }
+      .cloze-header { flex-direction: column; gap: 10px; }
+      .cloze-passage { line-height: 2.75; }
+      .cloze-slot { min-width: 124px; max-width: 180px; }
+      .bg-seal.right { display: none; }
+      .result-panel { padding: 32px 20px; }
+    }
+
+    @media (max-width: 430px) {
+      h1 { font-size: 3.3rem; }
+      .facts { gap: 7px; }
+      .facts li { font-size: .78rem; }
+      .quiz-topline { align-items: flex-start; }
+      .mini-brand span { max-width: 120px; line-height: 1.05; }
+      .result-stats { grid-template-columns: repeat(2, 1fr); gap: 7px; }
+      .stat { padding: 15px 7px; }
+      .review-item { align-items: flex-start; flex-direction: column; gap: 3px; }
+      .review-item span { text-align: left; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
+    }
+  </style>
+</head>
+<body>
+  <svg width="0" height="0" aria-hidden="true" focusable="false">
+    <defs>
+      <symbol id="seal-symbol" viewBox="0 0 360 260">
+        <path fill="currentColor" d="M88 183c-35-20-58-49-58-83 0-48 45-83 103-83 57 0 103 34 111 82 7 39 29 53 74 57 18 2 24 16 14 30-18 25-60 37-100 28-28-6-52-5-77 2-26 7-48 1-67-13z"/>
+        <path fill="currentColor" d="M104 179c-31 4-63 18-76 35-7 10 3 22 17 18 27-7 55-19 73-37zM248 171c34-2 65 5 81 19 10 9 3 23-12 23-31-1-59-8-80-24z"/>
+        <ellipse cx="119" cy="91" rx="10" ry="13" fill="#073b4c"/>
+        <ellipse cx="188" cy="91" rx="10" ry="13" fill="#073b4c"/>
+        <ellipse cx="153" cy="123" rx="17" ry="12" fill="#6d7074"/>
+        <path d="M154 135c-4 12-14 17-27 17M154 135c4 12 14 17 27 17" fill="none" stroke="#47616a" stroke-width="6" stroke-linecap="round"/>
+        <path d="M132 122 58 111M132 130l-75 8M174 122l76-11M174 130l75 8" fill="none" stroke="#7ea1a8" stroke-width="4" stroke-linecap="round" opacity=".9"/>
+        <circle cx="104" cy="117" r="6" fill="#d8eef0"/><circle cx="201" cy="117" r="6" fill="#d8eef0"/>
+      </symbol>
+    </defs>
+  </svg>
+
+  <div class="scene" aria-hidden="true">
+    <span class="bubble one"></span>
+    <span class="bubble two"></span>
+    <svg class="bg-seal left" viewBox="0 0 360 260"><use href="#seal-symbol"></use></svg>
+    <svg class="bg-seal right" viewBox="0 0 360 260"><use href="#seal-symbol"></use></svg>
+    <div class="ice-bank"></div>
+  </div>
+
+  <main class="app-shell">
+    <section id="introScreen" class="screen" aria-labelledby="gameTitle">
+      <div class="panel intro-panel">
+        <div>
+          <p class="eyebrow">Lessons 7–10</p>
+          <h1 id="gameTitle">Carlos's<br>Pinyin Quest</h1>
+          <p class="intro-copy">Read the Pinyin, choose its English meaning, then complete two Pinyin-only cloze passages. Your score stays hidden until everything is finished.</p>
+          <ul class="facts" aria-label="Quiz details">
+            <li><span id="wordCount">59</span> words</li>
+            <li>4 choices each</li>
+            <li>2 cloze passages</li>
+            <li>Score out of 100</li>
+          </ul>
+          <button id="startButton" class="primary-button" type="button">Start the quiz</button>
+        </div>
+        <div class="hero-art" aria-hidden="true">
+          <div class="hero-disc"></div>
+          <svg class="hero-seal" viewBox="0 0 360 260"><use href="#seal-symbol"></use></svg>
+          <span class="fish">◁</span>
+        </div>
+      </div>
+      <p class="footer-note">Pinyin prompts only · No Chinese characters</p>
+    </section>
+
+    <section id="quizScreen" class="screen" hidden aria-labelledby="questionHeading">
+      <div class="panel quiz-panel">
+        <div class="quiz-topline">
+          <div class="mini-brand">
+            <svg class="mini-seal" viewBox="0 0 360 260" aria-hidden="true"><use href="#seal-symbol"></use></svg>
+            <span>Pinyin Quest</span>
+          </div>
+          <div id="questionCount" class="question-count" aria-live="polite">Question 1 of 59</div>
+        </div>
+
+        <div class="progress-track" aria-hidden="true">
+          <div id="progressFill" class="progress-fill"></div>
+          <svg id="progressSeal" class="progress-seal" viewBox="0 0 360 260"><use href="#seal-symbol"></use></svg>
+        </div>
+
+        <article class="prompt-card">
+          <div>
+            <p class="prompt-label">What does this mean?</p>
+            <h2 id="questionHeading" class="pinyin">fùjìn</h2>
+          </div>
+        </article>
+
+        <div id="answers" class="answers" role="group" aria-label="English meaning choices"></div>
+
+        <div class="feedback-row">
+          <p id="feedback" class="feedback" aria-live="assertive">Choose one answer.</p>
+          <button id="nextButton" class="primary-button next-button" type="button" hidden>Next word</button>
+        </div>
+      </div>
+      <p class="footer-note">Tip: press 1–4 to answer, then Enter to continue</p>
+    </section>
+
+    <section id="clozeScreen" class="screen" hidden aria-labelledby="clozeTitle">
+      <div class="panel cloze-panel">
+        <div class="cloze-header">
+          <div>
+            <p class="eyebrow">Pinyin cloze</p>
+            <h2 id="clozeTitle">A Rainy Weekend</h2>
+            <p class="cloze-instructions">Drag each Pinyin block into the correct blank. On a phone, tap a block and then tap a blank.</p>
+          </div>
+          <div id="clozeCount" class="cloze-count" aria-live="polite">Passage 1 of 2</div>
+        </div>
+
+        <p class="word-bank-label">Pinyin word pool</p>
+        <div id="wordBank" class="word-bank" aria-label="Pinyin word pool"></div>
+
+        <article id="clozePassage" class="cloze-passage" aria-label="Pinyin cloze passage"></article>
+
+        <div class="feedback-row">
+          <p id="clozeFeedback" class="feedback" aria-live="assertive">Place every block, then check your answers.</p>
+          <button id="checkClozeButton" class="primary-button next-button" type="button">Check passage</button>
+          <button id="nextClozeButton" class="primary-button next-button" type="button" hidden>Next passage</button>
+        </div>
+      </div>
+      <p class="footer-note">Passages and word blocks use Pinyin only · No Chinese characters</p>
+    </section>
+
+    <section id="resultScreen" class="screen" hidden aria-labelledby="resultTitle">
+      <div class="panel result-panel">
+        <svg class="result-mascot" viewBox="0 0 360 260" aria-hidden="true"><use href="#seal-symbol"></use></svg>
+        <p class="eyebrow">All activities complete</p>
+        <h2 id="resultTitle">Nice swim, Carlos!</h2>
+        <p id="resultMessage" class="result-message">You made it through every word.</p>
+
+        <div id="scoreRing" class="score-ring" aria-label="Final score">
+          <div class="score-content">
+            <span id="scoreNumber" class="score-number">0</span>
+            <span class="score-out-of">out of 100</span>
+          </div>
+        </div>
+
+        <div class="result-stats" aria-label="Quiz results">
+          <div class="stat"><strong id="vocabStat">0/59</strong><span>Vocabulary</span></div>
+          <div class="stat"><strong id="clozeStat">0/10</strong><span>Cloze</span></div>
+          <div class="stat"><strong id="correctStat">0</strong><span>Correct</span></div>
+          <div class="stat"><strong id="totalStat">69</strong><span>Total</span></div>
+        </div>
+
+        <div class="result-actions">
+          <button id="restartButton" class="primary-button" type="button">Try again</button>
+          <button id="reviewButton" class="secondary-button" type="button">Review missed words</button>
+        </div>
+
+        <div id="review" class="review" hidden>
+          <h3>Words to revisit</h3>
+          <ul id="reviewList" class="review-list"></ul>
+        </div>
+      </div>
+      <p class="footer-note">Each new attempt reshuffles every question and answer</p>
+    </section>
+  </main>
+
+  <script>
+    "use strict";
+
+    const vocabulary = Object.freeze([
+      { pinyin: "fùjìn", meaning: "nearby / vicinity", lesson: 7 },
+      { pinyin: "ménkǒu", meaning: "entrance / doorway", lesson: 7 },
+      { pinyin: "jiànmiàn", meaning: "to meet", lesson: 7 },
+      { pinyin: "jiān", meaning: "measure word for rooms, buildings, or restaurants", lesson: 7 },
+      { pinyin: "wǎn", meaning: "bowl", lesson: 7 },
+      { pinyin: "bǎi", meaning: "hundred (100)", lesson: 7 },
+      { pinyin: "guì", meaning: "expensive", lesson: 7 },
+      { pinyin: "piányí", meaning: "cheap", lesson: 7 },
+      { pinyin: "niúròumiàn", meaning: "beef noodles", lesson: 7 },
+      { pinyin: "hóngchá", meaning: "black tea", lesson: 7 },
+      { pinyin: "ròuzào fàn", meaning: "minced pork rice", lesson: 7 },
+      { pinyin: "suān-là tāng", meaning: "hot-and-sour soup", lesson: 7 },
+      { pinyin: "jiǎozi", meaning: "dumplings", lesson: 7 },
+
+      { pinyin: "jìjié", meaning: "season", lesson: 8 },
+      { pinyin: "zuì", meaning: "the most", lesson: 8 },
+      { pinyin: "yīzhí", meaning: "always / continuously", lesson: 8 },
+      { pinyin: "juéde", meaning: "to think / to feel", lesson: 8 },
+      { pinyin: "gǎnjué", meaning: "feeling / to feel", lesson: 8 },
+      { pinyin: "suǒyǐ", meaning: "so / therefore", lesson: 8 },
+      { pinyin: "rè", meaning: "hot", lesson: 8 },
+      { pinyin: "lěng", meaning: "cold", lesson: 8 },
+      { pinyin: "wēnnuǎn", meaning: "warm", lesson: 8 },
+      { pinyin: "liángkuài", meaning: "cool", lesson: 8 },
+      { pinyin: "chūntiān", meaning: "spring", lesson: 8 },
+      { pinyin: "xiàtiān", meaning: "summer", lesson: 8 },
+      { pinyin: "qiūtiān", meaning: "autumn", lesson: 8 },
+      { pinyin: "dōngtiān", meaning: "winter", lesson: 8 },
+
+      { pinyin: "zhōumò", meaning: "weekend", lesson: 9 },
+      { pinyin: "dǎsuàn", meaning: "to plan / intend", lesson: 9 },
+      { pinyin: "huì", meaning: "will / can / likely to", lesson: 9 },
+      { pinyin: "kěnéng", meaning: "maybe / possible", lesson: 9 },
+      { pinyin: "rúguǒ", meaning: "if", lesson: 9 },
+      { pinyin: "xiàyǔ", meaning: "to rain", lesson: 9 },
+      { pinyin: "kàn", meaning: "to watch / read / see", lesson: 9 },
+      { pinyin: "tīng", meaning: "to listen / hear", lesson: 9 },
+      { pinyin: "chī", meaning: "to eat", lesson: 9 },
+      { pinyin: "hē", meaning: "to drink", lesson: 9 },
+      { pinyin: "dǎ", meaning: "to hit / play (used with some nouns)", lesson: 9 },
+      { pinyin: "yóuyǒng", meaning: "to swim", lesson: 9 },
+      { pinyin: "tán", meaning: "to play a plucked or struck instrument", lesson: 9 },
+      { pinyin: "qiú", meaning: "ball", lesson: 9 },
+      { pinyin: "gāngqín", meaning: "piano", lesson: 9 },
+      { pinyin: "yóuxì", meaning: "game", lesson: 9 },
+      { pinyin: "diàndòng", meaning: "video game", lesson: 9 },
+
+      { pinyin: "qǐchuáng", meaning: "to get up (from bed)", lesson: 10 },
+      { pinyin: "shuì guòtóu", meaning: "to oversleep", lesson: 10 },
+      { pinyin: "míngxiǎng", meaning: "to meditate", lesson: 10 },
+      { pinyin: "měitiān", meaning: "every day", lesson: 10 },
+      { pinyin: "xíguàn", meaning: "habit / to be used to", lesson: 10 },
+      { pinyin: "yùndòng", meaning: "exercise", lesson: 10 },
+      { pinyin: "diànshì", meaning: "TV", lesson: 10 },
+      { pinyin: "bú cuò", meaning: "not bad", lesson: 10 },
+      { pinyin: "yǐqián", meaning: "before", lesson: 10 },
+      { pinyin: "yǐhòu", meaning: "after", lesson: 10 },
+      { pinyin: "zǎoshang", meaning: "morning", lesson: 10 },
+      { pinyin: "shàngwǔ", meaning: "morning", lesson: 10 },
+      { pinyin: "zhōngwǔ", meaning: "noon", lesson: 10 },
+      { pinyin: "xiàwǔ", meaning: "afternoon", lesson: 10 },
+      { pinyin: "wǎnshang", meaning: "evening / night", lesson: 10 }
+    ]);
+
+    const clozePassages = Object.freeze([
+      {
+        title: "A Rainy Weekend",
+        text: "Měitiān zǎoshang, tā [[qǐchuáng]] yǐhòu, xiān [[yùndòng]], zài míngxiǎng. Zhège [[zhōumò]], tā [[dǎsuàn]] qù yóuyǒng; rúguǒ [[xiàyǔ]], tā jiù zài jiā kàn diànshì.",
+        words: ["qǐchuáng", "yùndòng", "zhōumò", "dǎsuàn", "xiàyǔ"]
+      },
+      {
+        title: "An Autumn Dinner",
+        text: "Qiūtiān de tiānqì hěn [[liángkuài]], tā [[juéde]] hěn shūfu. Wǎnshang, tā zài [[fùjìn]] de cāntīng chī [[niúròumiàn]] hé jiǎozi. Zhèxiē dōngxi bù guì, hěn [[piányí]].",
+        words: ["liángkuài", "juéde", "fùjìn", "niúròumiàn", "piányí"]
+      }
+    ]);
+
+    const introScreen = document.getElementById("introScreen");
+    const quizScreen = document.getElementById("quizScreen");
+    const clozeScreen = document.getElementById("clozeScreen");
+    const resultScreen = document.getElementById("resultScreen");
+    const startButton = document.getElementById("startButton");
+    const restartButton = document.getElementById("restartButton");
+    const reviewButton = document.getElementById("reviewButton");
+    const nextButton = document.getElementById("nextButton");
+    const checkClozeButton = document.getElementById("checkClozeButton");
+    const nextClozeButton = document.getElementById("nextClozeButton");
+    const questionHeading = document.getElementById("questionHeading");
+    const questionCount = document.getElementById("questionCount");
+    const answers = document.getElementById("answers");
+    const feedback = document.getElementById("feedback");
+    const progressFill = document.getElementById("progressFill");
+    const progressSeal = document.getElementById("progressSeal");
+    const clozeTitle = document.getElementById("clozeTitle");
+    const clozeCount = document.getElementById("clozeCount");
+    const clozePassage = document.getElementById("clozePassage");
+    const clozeFeedback = document.getElementById("clozeFeedback");
+    const wordBank = document.getElementById("wordBank");
+    const scoreNumber = document.getElementById("scoreNumber");
+    const scoreRing = document.getElementById("scoreRing");
+    const resultTitle = document.getElementById("resultTitle");
+    const resultMessage = document.getElementById("resultMessage");
+    const vocabStat = document.getElementById("vocabStat");
+    const clozeStat = document.getElementById("clozeStat");
+    const correctStat = document.getElementById("correctStat");
+    const totalStat = document.getElementById("totalStat");
+    const review = document.getElementById("review");
+    const reviewList = document.getElementById("reviewList");
+
+    let questions = [];
+    let currentIndex = 0;
+    let correctCount = 0;
+    let answered = false;
+    let misses = [];
+    let clozeIndex = 0;
+    let clozeCorrectCount = 0;
+    let clozeChecked = false;
+    let selectedChip = null;
+    let draggedChip = null;
+
+    const clozeTotalCount = clozePassages.reduce((total, passage) => total + passage.words.length, 0);
+
+    document.getElementById("wordCount").textContent = vocabulary.length;
+    totalStat.textContent = vocabulary.length + clozeTotalCount;
+
+    function shuffle(items) {
+      const result = [...items];
+      for (let index = result.length - 1; index > 0; index -= 1) {
+        const randomIndex = Math.floor(Math.random() * (index + 1));
+        [result[index], result[randomIndex]] = [result[randomIndex], result[index]];
+      }
+      return result;
+    }
+
+    function buildChoices(question) {
+      const sameLesson = shuffle(vocabulary.filter(item => item.lesson === question.lesson && item.meaning !== question.meaning));
+      const otherLessons = shuffle(vocabulary.filter(item => item.lesson !== question.lesson && item.meaning !== question.meaning));
+      const distractors = [];
+
+      for (const item of [...sameLesson, ...otherLessons]) {
+        if (!distractors.includes(item.meaning)) distractors.push(item.meaning);
+        if (distractors.length === 3) break;
+      }
+
+      return shuffle([question.meaning, ...distractors]);
+    }
+
+    function showScreen(target) {
+      [introScreen, quizScreen, clozeScreen, resultScreen].forEach(screen => {
+        screen.hidden = screen !== target;
+      });
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+
+    function startQuiz() {
+      questions = shuffle(vocabulary).map(item => ({ ...item, choices: buildChoices(item) }));
+      currentIndex = 0;
+      correctCount = 0;
+      answered = false;
+      misses = [];
+      clozeIndex = 0;
+      clozeCorrectCount = 0;
+      clozeChecked = false;
+      selectedChip = null;
+      draggedChip = null;
+      review.hidden = true;
+      reviewButton.hidden = false;
+      showScreen(quizScreen);
+      renderQuestion();
+    }
+
+    function renderQuestion() {
+      answered = false;
+      const question = questions[currentIndex];
+      const number = currentIndex + 1;
+      const progress = currentIndex / questions.length * 100;
+
+      questionHeading.textContent = question.pinyin;
+      questionCount.textContent = `Question ${number} of ${questions.length}`;
+      progressFill.style.width = `${progress}%`;
+      progressSeal.style.left = `${progress}%`;
+      feedback.textContent = "Choose one answer.";
+      feedback.className = "feedback";
+      nextButton.hidden = true;
+      nextButton.textContent = number === questions.length ? "Start Cloze" : "Next word";
+      answers.replaceChildren();
+
+      question.choices.forEach((choice, index) => {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = "answer";
+        button.dataset.meaning = choice;
+        button.innerHTML = `<span>${escapeHtml(choice)}</span><span class="answer-key" aria-hidden="true">${index + 1}</span>`;
+        button.addEventListener("click", () => selectAnswer(button, question));
+        answers.appendChild(button);
+      });
+
+      const firstAnswer = answers.querySelector("button");
+      if (firstAnswer) firstAnswer.focus({ preventScroll: true });
+    }
+
+    function selectAnswer(selectedButton, question) {
+      if (answered) return;
+      answered = true;
+      const selectedMeaning = selectedButton.dataset.meaning;
+      const isCorrect = selectedMeaning === question.meaning;
+
+      answers.querySelectorAll(".answer").forEach(button => {
+        button.disabled = true;
+        if (button.dataset.meaning === question.meaning) button.classList.add("correct");
+      });
+
+      if (isCorrect) {
+        correctCount += 1;
+        feedback.textContent = "Correct — nicely done!";
+        feedback.className = "feedback good";
+      } else {
+        selectedButton.classList.add("wrong");
+        misses.push({ pinyin: question.pinyin, meaning: question.meaning });
+        feedback.textContent = "Not quite. The correct answer is highlighted in green.";
+        feedback.className = "feedback bad";
+      }
+
+      nextButton.hidden = false;
+      nextButton.focus({ preventScroll: true });
+    }
+
+    function nextQuestion() {
+      if (!answered) return;
+      if (currentIndex < questions.length - 1) {
+        currentIndex += 1;
+        renderQuestion();
+      } else {
+        startCloze();
+      }
+    }
+
+    function startCloze() {
+      progressFill.style.width = "100%";
+      progressSeal.style.left = "100%";
+      clozeIndex = 0;
+      showScreen(clozeScreen);
+      renderCloze();
+    }
+
+    function createWordChip(word) {
+      const chip = document.createElement("button");
+      chip.type = "button";
+      chip.className = "word-chip";
+      chip.textContent = word;
+      chip.dataset.word = word;
+      chip.draggable = true;
+      chip.setAttribute("aria-label", `Pinyin block: ${word}`);
+
+      chip.addEventListener("click", event => {
+        event.stopPropagation();
+        if (clozeChecked) return;
+        selectChip(chip);
+      });
+
+      chip.addEventListener("dragstart", event => {
+        if (clozeChecked) {
+          event.preventDefault();
+          return;
+        }
+        draggedChip = chip;
+        chip.classList.add("dragging");
+        event.dataTransfer.effectAllowed = "move";
+        event.dataTransfer.setData("text/plain", word);
+      });
+
+      chip.addEventListener("dragend", () => {
+        chip.classList.remove("dragging");
+        draggedChip = null;
+        clearDragHighlights();
+      });
+
+      return chip;
+    }
+
+    function selectChip(chip) {
+      document.querySelectorAll(".word-chip.selected").forEach(item => item.classList.remove("selected"));
+      if (selectedChip === chip) {
+        selectedChip = null;
+        return;
+      }
+      selectedChip = chip;
+      chip.classList.add("selected");
+    }
+
+    function placeChip(chip, slot) {
+      if (!chip || clozeChecked) return;
+      const existing = slot.querySelector(".word-chip");
+      if (existing && existing !== chip) wordBank.appendChild(existing);
+      slot.appendChild(chip);
+      chip.classList.remove("selected", "dragging");
+      selectedChip = null;
+      draggedChip = null;
+      clearDragHighlights();
+    }
+
+    function returnChipToPool(chip) {
+      if (!chip || clozeChecked) return;
+      wordBank.appendChild(chip);
+      chip.classList.remove("selected", "dragging");
+      selectedChip = null;
+      draggedChip = null;
+      clearDragHighlights();
+    }
+
+    function clearDragHighlights() {
+      document.querySelectorAll(".drag-over").forEach(item => item.classList.remove("drag-over"));
+    }
+
+    function renderCloze() {
+      const passage = clozePassages[clozeIndex];
+      let lastIndex = 0;
+      let blankIndex = 0;
+      const blankPattern = /\[\[([^\]]+)\]\]/g;
+
+      clozeChecked = false;
+      selectedChip = null;
+      draggedChip = null;
+      clozeTitle.textContent = passage.title;
+      clozeCount.textContent = `Passage ${clozeIndex + 1} of ${clozePassages.length}`;
+      clozeFeedback.textContent = "Place every block, then check your answers.";
+      clozeFeedback.className = "feedback";
+      checkClozeButton.hidden = false;
+      nextClozeButton.hidden = true;
+      nextClozeButton.textContent = clozeIndex === clozePassages.length - 1 ? "See final score" : "Next passage";
+      wordBank.replaceChildren(...shuffle(passage.words).map(createWordChip));
+      clozePassage.replaceChildren();
+
+      for (const match of passage.text.matchAll(blankPattern)) {
+        clozePassage.appendChild(document.createTextNode(passage.text.slice(lastIndex, match.index)));
+
+        const wrapper = document.createElement("span");
+        wrapper.className = "cloze-blank";
+        const slot = document.createElement("span");
+        slot.className = "cloze-slot";
+        slot.dataset.answer = match[1];
+        slot.tabIndex = 0;
+        slot.setAttribute("role", "button");
+        slot.setAttribute("aria-label", `Blank ${blankIndex + 1}`);
+        const correction = document.createElement("span");
+        correction.className = "cloze-correction";
+        correction.hidden = true;
+
+        slot.addEventListener("click", () => {
+          if (selectedChip) placeChip(selectedChip, slot);
+          else {
+            const chip = slot.querySelector(".word-chip");
+            if (chip) selectChip(chip);
+          }
+        });
+        slot.addEventListener("keydown", event => {
+          if (event.key === "Enter" || event.key === " ") {
+            event.preventDefault();
+            slot.click();
+          }
+        });
+        slot.addEventListener("dragover", event => {
+          if (clozeChecked) return;
+          event.preventDefault();
+          event.dataTransfer.dropEffect = "move";
+          slot.classList.add("drag-over");
+        });
+        slot.addEventListener("dragleave", () => slot.classList.remove("drag-over"));
+        slot.addEventListener("drop", event => {
+          event.preventDefault();
+          placeChip(draggedChip, slot);
+        });
+
+        wrapper.append(slot, correction);
+        clozePassage.appendChild(wrapper);
+        lastIndex = match.index + match[0].length;
+        blankIndex += 1;
+      }
+      clozePassage.appendChild(document.createTextNode(passage.text.slice(lastIndex)));
+    }
+
+    function checkCloze() {
+      if (clozeChecked) return;
+      const slots = [...clozePassage.querySelectorAll(".cloze-slot")];
+      if (slots.some(slot => !slot.querySelector(".word-chip"))) {
+        clozeFeedback.textContent = "Place all five Pinyin blocks before checking.";
+        clozeFeedback.className = "feedback bad";
+        return;
+      }
+
+      let passageCorrect = 0;
+      slots.forEach(slot => {
+        const chip = slot.querySelector(".word-chip");
+        const correction = slot.parentElement.querySelector(".cloze-correction");
+        const isCorrect = chip.dataset.word === slot.dataset.answer;
+        slot.classList.add(isCorrect ? "correct" : "wrong");
+        chip.disabled = true;
+        chip.draggable = false;
+        if (isCorrect) {
+          passageCorrect += 1;
+        } else {
+          correction.textContent = `→ ${slot.dataset.answer}`;
+          correction.hidden = false;
+        }
+      });
+
+      clozeCorrectCount += passageCorrect;
+      clozeChecked = true;
+      checkClozeButton.hidden = true;
+      nextClozeButton.hidden = false;
+      clozeFeedback.textContent = passageCorrect === slots.length
+        ? "Perfect — every block is in the right place!"
+        : `${passageCorrect} of ${slots.length} correct. The correct Pinyin is shown in green.`;
+      clozeFeedback.className = passageCorrect === slots.length ? "feedback good" : "feedback bad";
+      nextClozeButton.focus({ preventScroll: true });
+    }
+
+    function nextCloze() {
+      if (!clozeChecked) return;
+      if (clozeIndex < clozePassages.length - 1) {
+        clozeIndex += 1;
+        renderCloze();
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      } else {
+        showResults();
+      }
+    }
+
+    function showResults() {
+      const totalCorrect = correctCount + clozeCorrectCount;
+      const totalItems = questions.length + clozeTotalCount;
+      const score = Math.round(totalCorrect / totalItems * 100);
+      scoreNumber.textContent = score;
+      scoreRing.style.setProperty("--score-angle", `${score * 3.6}deg`);
+      vocabStat.textContent = `${correctCount}/${questions.length}`;
+      clozeStat.textContent = `${clozeCorrectCount}/${clozeTotalCount}`;
+      correctStat.textContent = totalCorrect;
+      totalStat.textContent = totalItems;
+
+      if (score === 100) {
+        resultTitle.textContent = "Perfect dive, Carlos!";
+        resultMessage.textContent = "Every vocabulary question and every cloze blank was correct. The seals are impressed.";
+      } else if (score >= 85) {
+        resultTitle.textContent = "Excellent swim, Carlos!";
+        resultMessage.textContent = "A strong finish across the vocabulary quiz and both cloze passages.";
+      } else if (score >= 70) {
+        resultTitle.textContent = "Nice swim, Carlos!";
+        resultMessage.textContent = "Good work. Review the missed words, then dive in again.";
+      } else {
+        resultTitle.textContent = "Keep swimming, Carlos!";
+        resultMessage.textContent = "You finished every vocabulary question and both cloze passages. Try another round soon.";
+      }
+
+      reviewButton.hidden = misses.length === 0;
+      renderReview();
+      showScreen(resultScreen);
+      restartButton.focus({ preventScroll: true });
+    }
+
+    function renderReview() {
+      reviewList.replaceChildren();
+      misses.forEach(item => {
+        const listItem = document.createElement("li");
+        listItem.className = "review-item";
+        const pinyin = document.createElement("strong");
+        const meaning = document.createElement("span");
+        pinyin.textContent = item.pinyin;
+        meaning.textContent = item.meaning;
+        listItem.append(pinyin, meaning);
+        reviewList.appendChild(listItem);
+      });
+    }
+
+    function escapeHtml(value) {
+      return value.replace(/[&<>'"]/g, character => ({
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        "'": "&#39;",
+        "\"": "&quot;"
+      })[character]);
+    }
+
+    startButton.addEventListener("click", startQuiz);
+    restartButton.addEventListener("click", startQuiz);
+    nextButton.addEventListener("click", nextQuestion);
+    checkClozeButton.addEventListener("click", checkCloze);
+    nextClozeButton.addEventListener("click", nextCloze);
+    wordBank.addEventListener("click", event => {
+      if (event.target === wordBank && selectedChip) returnChipToPool(selectedChip);
+    });
+    wordBank.addEventListener("dragover", event => {
+      if (clozeChecked) return;
+      event.preventDefault();
+      event.dataTransfer.dropEffect = "move";
+      wordBank.classList.add("drag-over");
+    });
+    wordBank.addEventListener("dragleave", () => wordBank.classList.remove("drag-over"));
+    wordBank.addEventListener("drop", event => {
+      event.preventDefault();
+      returnChipToPool(draggedChip);
+    });
+    reviewButton.addEventListener("click", () => {
+      review.hidden = !review.hidden;
+      reviewButton.textContent = review.hidden ? "Review missed words" : "Hide review";
+      if (!review.hidden) review.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    });
+
+    document.addEventListener("keydown", event => {
+      if (quizScreen.hidden) return;
+      if (!answered && ["1", "2", "3", "4"].includes(event.key)) {
+        const button = answers.children[Number(event.key) - 1];
+        if (button) button.click();
+      } else if (answered && event.key === "Enter") {
+        nextQuestion();
+      }
+    });
+  </script>
+</body>
+</html>
